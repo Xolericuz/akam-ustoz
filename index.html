@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tez va To'g'ri Yozishni O'rganamiz</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #cbd5e1;
+            --primary-color: #10b981;
+            --error-color: #ef4444;
+            --panel-bg: rgba(30, 41, 59, 0.95);
+            --key-bg: #1e293b;
+            --key-active: #334155;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header va Statistika */
+        header {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #334155;
+            z-index: 10;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .stat-box {
+            background: var(--key-bg);
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .stat-box span { color: var(--primary-color); }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .settings-btn:hover { transform: rotate(90deg); }
+
+        /* Asosiy Matn Qismi */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .word-container {
+            font-size: 2rem;
+            line-height: 1.6;
+            letter-spacing: 2px;
+            background: var(--key-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-height: 40vh;
+            overflow-y: auto;
+            position: relative;
+            user-select: none;
+        }
+
+        /* Scrollbar dizayni */
+        .word-container::-webkit-scrollbar { width: 8px; }
+        .word-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+        .letter {
+            opacity: 0.5;
+            transition: all 0.1s;
+            position: relative;
+        }
+
+        .letter.correct { opacity: 1; color: var(--primary-color); }
+        .letter.incorrect { opacity: 1; color: var(--error-color); background: rgba(239, 68, 68, 0.2); border-radius: 3px; }
+        
+        .cursor {
+            border-bottom: 3px solid var(--primary-color);
+            animation: blink 1s infinite;
+            opacity: 1 !important;
+            color: white;
+        }
+
+        @keyframes blink {
+            0%, 100% { border-color: var(--primary-color); }
+            50% { border-color: transparent; }
+        }
+
+        /* Mobil uchun input */
+        .mobile-input {
+            position: absolute;
+            top: -1000px;
+            left: -1000px;
+            opacity: 0;
+        }
+
+        /* Sozlamalar Paneli (Modal) */
+        .settings-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .settings-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .settings-content {
+            background: var(--panel-bg);
+            width: 90%;
+            max-width: 600px;
+            padding: 30px;
+            border-radius: 15px;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            border: 1px solid #334155;
+            backdrop-filter: blur(15px);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px; right: 20px;
+            font-size: 2rem;
+            color: #94a3b8;
+            cursor: pointer;
+            border: none;
+            background: none;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover { color: var(--error-color); }
+
+        .settings-content h2 {
+            margin-bottom: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .topic-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .topic-btn {
+            background: var(--key-bg);
+            color: var(--text-color);
+            border: 1px solid #475569;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .topic-btn:hover {
+            background: #334155;
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Restart tugmasi */
+        .restart-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 30px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .restart-btn:hover { background: #059669; }
+
+        /* Mobil Moslashuv */
+        @media (max-width: 768px) {
+            .word-container { font-size: 1.5rem; letter-spacing: 1px; padding: 15px; }
+            .stats-container { font-size: 1rem; }
+            .stat-box { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="stats-container">
+            <div class="stat-box">Tezlik: <span id="wpm">0</span> WPM</div>
+            <div class="stat-box">Aniqlik: <span id="accuracy">100</span>%</div>
+        </div>
+        <button class="settings-btn" id="openSettings" title="Sozlamalar">⚙️</button>
+    </header>
+
+    <main>
+        <div class="word-container" id="wordContainer">
+            </div>
+        <button class="restart-btn" id="restartBtn">Qayta boshlash</button>
+    </main>
+
+    <textarea id="hiddenInput" class="mobile-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <button class="close-btn" id="closeSettings">&times;</button>
+            <h2>Mavzuni tanlang</h2>
+            <div class="topic-list" id="topicList">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // 5 ta turli xil mavzudagi matnlar bazasi
+        const topics = [
+            {
+                title: "1. Abdillo haqida (Shaxsiy rivojlanish)",
+                text: "Mening ismim Abdillo. Men hozirda maktabda tahsil olaman va hayotimning eng muhim bosqichlaridan birini boshdan kechiryapman. Bolaligimdan boshlab bilim olishga, o‘rganishga va o‘zimni har tomonlama rivojlantirishga katta qiziqish bilan qarab kelganman. Har bir kunimni yangi narsalarni o‘rganish, o‘z ustimda ishlash va kelajak uchun mustahkam poydevor yaratishga bag‘ishlashga harakat qilaman. Men oddiy oilada tug‘ilib o‘sganman. Ota-onam menga doimo halollik, mehnatsevarlik va sabr-toqat kabi fazilatlarni singdirib kelishgan. Ularning tarbiyasi tufayli men hayotda hech narsaga osonlik bilan erishib bo‘lmasligini, har qanday muvaffaqiyat ortida tinimsiz mehnat yotishini erta anglab yetdim. Maktab hayotim men uchun juda qiziqarli. Darslarda faol ishtirok etishga, o‘qituvchilarimning har bir sabog‘ini diqqat bilan tinglashga intilaman. Bo‘sh vaqtimda kitob o‘qishni juda yaxshi ko‘raman. Kitoblar menga yangi dunyoqarash, keng fikrlash imkonini beradi. Kelajakda o‘z bilim va ko‘nikmalarim orqali nafaqat o‘zim, balki oilam va jamiyatim uchun ham foydali bo‘lishni istayman."
+            },
+            {
+                title: "2. O'zbekiston tabiati va tarixi",
+                text: "O'zbekiston o'zining boy tarixi, qadimiy obidalari va go'zal tabiati bilan butun dunyoga mashhur. Samarqand, Buxoro va Xiva kabi shaharlarimiz qadimiy Ipak yo'lining markazlari bo'lgan. Bu yerda yashab ijod qilgan Mirzo Ulug'bek, Ibn Sino, Alisher Navoiy kabi buyuk allomalarimiz jahon sivilizatsiyasiga ulkan hissa qo'shishgan. Yurtimizning tabiati ham o'ziga xos. Baland tog'lar, keng vodiy va sahrolar bir-biri bilan uyg'unlashib ketgan. Bahor kelishi bilan qir-adirlar qizil qizg'aldoqlar bilan qoplanadi. Biz o'z tariximiz bilan faxrlanishimiz va tabiatimizni asrab-avaylashimiz kerak."
+            },
+            {
+                title: "3. Zamonaviy Texnologiyalar",
+                text: "Bugungi kunda axborot texnologiyalari hayotimizning ajralmas qismiga aylandi. Kompyuter, smartfon va internet orqali biz dunyoning istalgan nuqtasi bilan bog'lana olamiz. Sun'iy intellekt, robototexnika va kosmosni o'rganish sohalari juda tez rivojlanmoqda. Dasturlash tillarini o'rganish zamonaviy yoshlar uchun eng muhim ko'nikmalardan biri hisoblanadi. Kelajak kasblarining aksariyati aynan texnologiyalar bilan bog'liq bo'ladi. Shuning uchun kompyuter savodxonligini oshirish har bir inson uchun juda muhimdir."
+            },
+            {
+                title: "4. Koinot sirlari",
+                text: "Koinot - bu cheksizlik va tilsimlar makonidir. Bizning Quyosh tizimimiz Somon Yo'li galaktikasining kichik bir qismidir. Olimlar yillar davomida koinotni o'rganib kelishmoqda, ammo uning aksariyat qismi hamon jumboqligicha qolmoqda. Oyga qilingan parvozlar, Marsga yuborilgan marsyurarlar insoniyatning katta yutuqlaridir. Kelajakda balki insonlar boshqa sayyoralarga ham sayohat qila olishar. Koinotni o'rganish bizga o'z sayyoramiz - Yerni yaxshiroq tushunishga va qadrlashga yordam beradi."
+            },
+            {
+                title: "5. Sport va Sog'lom turmush tarzi",
+                text: "Sog'lom tanda - sog' aql. Sport bilan muntazam shug'ullanish insonni nafaqat jismonan baquvvat qiladi, balki irodasini ham toblaydi. Ertalabki badantarbiya kun davomida tetik yurishimizga yordam beradi. Futbol, boks, dzyudo va shaxmat kabi sport turlarida o'zbek sportchilari jahon arenalarida yuqori natijalarga erishib kelmoqda. Sport zararli odatlardan uzoq bo'lishga va sog'lom turmush tarziga rioya qilishga o'rgatadi. Har bir inson o'zi yoqtirgan sport turi bilan shug'ullanishi kerak."
+            }
+        ];
+
+        // Dastur o'zgaruvchilari
+        let currentText = "";
+        let currentIndex = 0;
+        let errors = 0;
+        let timer = null;
+        let startTime = null;
+        let isTyping = false;
+        
+        // DOM elementlari
+        const wordContainer = document.getElementById("wordContainer");
+        const hiddenInput = document.getElementById("hiddenInput");
+        const wpmDisplay = document.getElementById("wpm");
+        const accuracyDisplay = document.getElementById("accuracy");
+        const settingsModal = document.getElementById("settingsModal");
+        const openSettingsBtn = document.getElementById("openSettings");
+        const closeSettingsBtn = document.getElementById("closeSettings");
+        const topicList = document.getElementById("topicList");
+        const restartBtn = document.getElementById("restartBtn");
+
+        // Mavzularni menyuga qo'shish
+        function loadTopics() {
+            topics.forEach((topic, index) => {
+                const btn = document.createElement("button");
+                btn.className = "topic-btn";
+                btn.textContent = topic.title;
+                btn.onclick = () => {
+                    startGame(index);
+                    closeSettings();
+                };
+                topicList.appendChild(btn);
+            });
+        }
+
+        // Dasturni boshlash
+        function startGame(topicIndex = 0) {
+            currentText = topics[topicIndex].text;
+            currentIndex = 0;
+            errors = 0;
+            isTyping = false;
+            clearInterval(timer);
+            startTime = null;
+            wpmDisplay.textContent = "0";
+            accuracyDisplay.textContent = "100";
+            hiddenInput.value = "";
+            renderText();
+            focusInput();
+        }
+
+        // Matnni ekranga chizish
+        function renderText() {
+            wordContainer.innerHTML = "";
+            
+            const chars = currentText.split("");
+            chars.forEach((char, index) => {
+                const span = document.createElement("span");
+                span.textContent = char;
+                span.className = "letter";
+                
+                if (index < currentIndex) {
+                    // Agar xato kiritilgan bo'lsa (bu mantiq kengaytirilishi mumkin)
+                    span.classList.add("correct"); 
+                }
+                
+                if (index === currentIndex) {
+                    span.classList.add("cursor");
+                }
+                
+                wordContainer.appendChild(span);
+            });
+
+            // Avtomatik skrolling (kursor ko'rinib turishi uchun)
+            const cursorElement = wordContainer.querySelector(".cursor");
+            if (cursorElement) {
+                const containerRect = wordContainer.getBoundingClientRect();
+                const cursorRect = cursorElement.getBoundingClientRect();
+                
+                if (cursorRect.bottom > containerRect.bottom - 20) {
+                    wordContainer.scrollTop += 40;
+                } else if (cursorRect.top < containerRect.top + 20) {
+                    wordContainer.scrollTop -= 40;
+                }
+            }
+        }
+
+        // Statistikani hisoblash
+        function calculateStats() {
+            if (!startTime) return;
+            const currentTime = new Date().getTime();
+            const timeElapsed = (currentTime - startTime) / 60000; // daqiqalarda
+            
+            const wordsTyped = currentIndex / 5; // Standart: 1 so'z = 5 belgi
+            const wpm = Math.round(wordsTyped / timeElapsed);
+            
+            const accuracy = currentIndex > 0 
+                ? Math.round(((currentIndex - errors) / currentIndex) * 100) 
+                : 100;
+
+            wpmDisplay.textContent = wpm > 0 ? wpm : 0;
+            accuracyDisplay.textContent = accuracy > 0 ? accuracy : 0;
+        }
+
+        // Kiritishni nazorat qilish (Asosiy mantiq)
+        function handleInput(e) {
+            const val = hiddenInput.value;
+            const lastChar = val.slice(-1);
+            const expectedChar = currentText[currentIndex];
+
+            if (!isTyping) {
+                isTyping = true;
+                startTime = new Date().getTime();
+                timer = setInterval(calculateStats, 1000);
+            }
+
+            if (val.length > currentIndex) {
+                // Yangi belgi kiritildi
+                if (lastChar === expectedChar) {
+                    currentIndex++;
+                } else {
+                    errors++;
+                    // Kichik tebranish effekti xato qilinganda
+                    wordContainer.style.transform = "translateX(5px)";
+                    setTimeout(() => wordContainer.style.transform = "translateX(-5px)", 50);
+                    setTimeout(() => wordContainer.style.transform = "translateX(0)", 100);
+                }
+            } else if (val.length < currentIndex) {
+                // Backspace bosildi (o'chirildi)
+                currentIndex--;
+            }
+
+            // Dastur tugagani tekshiriladi
+            if (currentIndex === currentText.length) {
+                clearInterval(timer);
+                calculateStats();
+                setTimeout(() => {
+                    alert(`Barakalla! \nSizning tezligingiz: ${wpmDisplay.textContent} WPM\nAniqlik: ${accuracyDisplay.textContent}%`);
+                    startGame(); // Avtomat qayta boshlash
+                }, 300);
+            }
+
+            // Inputni to'g'rilash va qayta chizish
+            hiddenInput.value = currentText.slice(0, currentIndex);
+            renderText();
+        }
+
+        // Sozlamalar panelini boshqarish
+        function openSettings() {
+            settingsModal.classList.add("active");
+            hiddenInput.blur();
+        }
+
+        function closeSettings() {
+            settingsModal.classList.remove("active");
+            focusInput();
+        }
+
+        function focusInput() {
+            hiddenInput.focus();
+        }
+
+        // Voqealarni tinglash (Event Listeners)
+        hiddenInput.addEventListener("input", handleInput);
+        openSettingsBtn.addEventListener("click", openSettings);
+        closeSettingsBtn.addEventListener("click", closeSettings);
+        restartBtn.addEventListener("click", () => startGame());
+        
+        // Ekranga bosilganda inputga fokus qaratish (Mobil uchun)
+        wordContainer.addEventListener("click", focusInput);
+        document.body.addEventListener("click", (e) => {
+            if (e.target.id !== "openSettings" && !settingsModal.classList.contains("active")) {
+                focusInput();
+            }
+        });
+
+        // Boshlang'ich yuklanish
+        loadTopics();
+        startGame(0);
+
+    </script>
+</body>
+</html>
