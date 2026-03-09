@@ -1,0 +1,21 @@
+{
+  "name": "Xoleric Ustoz",
+  "short_name": "Xoleric",
+  "description": "Tez va xatosiz yozishni o'rganish uchun aqlli dastur",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#131314",
+  "theme_color": "#131314",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/7tD0Kn5K",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.ibb.co/7tD0Kn5K",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
