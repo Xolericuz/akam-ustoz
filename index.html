@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#131314">
+    <title>XOLƎRIƆ Ustoz</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg-color: #131314;
+            --text-color: #e3e3e3;
+            --primary-color: #8ab4f8;
+            --error-color: #f28b82;
+            --panel-bg: #1e1e1f;
+            --key-bg: #28292a;
+            --key-active: #3c4043;
+            --font-main: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Loading Ekran */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid var(--key-bg);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Header */
+        header {
+            width: 100%;
+            max-width: 1200px;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: transparent;
+            z-index: 10;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-container img {
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 15px;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .stat-box {
+            color: #9aa0a6;
+        }
+        .stat-box span { color: var(--text-color); font-weight: 600; font-size: 1.2rem; }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .icon-btn {
+            background: var(--key-bg);
+            border: none;
+            color: var(--text-color);
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+        .icon-btn:hover { background: var(--key-active); transform: scale(1.05); }
+
+        #installBtn {
+            display: none;
+            background: var(--primary-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        /* Asosiy qism */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Matn bloki - 2 qatorli ko'rinish */
+        .typing-area {
+            position: relative;
+            font-size: 1.8rem;
+            line-height: 2.5rem;
+            height: 5rem;
+            overflow: hidden;
+            width: 100%;
+            color: #5f6368;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .words-wrapper {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .letter {
+            transition: color 0.1s ease;
+        }
+        .letter.correct { color: var(--text-color); }
+        .letter.incorrect { color: var(--error-color); text-decoration: underline; text-decoration-color: var(--error-color); }
+        
+        .cursor {
+            border-left: 2px solid var(--primary-color);
+            animation: blink 1s infinite;
+            margin-left: -2px;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .mobile-input {
+            position: absolute; top: -1000px; left: -1000px; opacity: 0;
+        }
+
+        /* Modal sozlamalar */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal.active { opacity: 1; pointer-events: all; }
+
+        .modal-content {
+            background: var(--panel-bg);
+            width: 90%; max-width: 500px;
+            padding: 30px; border-radius: 16px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #3c4043;
+        }
+
+        .modal-content h2 { color: var(--text-color); margin-bottom: 20px; font-weight: 500; }
+
+        .close-btn {
+            position: absolute; top: 20px; right: 20px;
+            background: none; border: none; color: #9aa0a6;
+            font-size: 1.5rem; cursor: pointer;
+        }
+        .close-btn:hover { color: var(--text-color); }
+
+        .topic-list {
+            display: flex; flex-direction: column; gap: 10px;
+            max-height: 50vh; overflow-y: auto; padding-right: 5px;
+        }
+        .topic-list::-webkit-scrollbar { width: 6px; }
+        .topic-list::-webkit-scrollbar-thumb { background: #3c4043; border-radius: 3px; }
+
+        .topic-btn {
+            background: transparent; color: var(--text-color);
+            border: 1px solid #3c4043; padding: 12px 16px;
+            border-radius: 8px; cursor: pointer; text-align: left;
+            font-size: 1rem; transition: all 0.2s;
+        }
+        .topic-btn:hover, .topic-btn.active { background: var(--key-active); border-color: var(--primary-color); }
+
+        .restart-btn {
+            margin: 40px auto 0; padding: 12px 30px;
+            background: transparent; color: var(--text-color);
+            border: 1px solid #3c4043; border-radius: 25px;
+            font-size: 1rem; cursor: pointer; transition: all 0.2s;
+        }
+        .restart-btn:hover { background: var(--key-active); }
+
+        @media (max-width: 768px) {
+            .typing-area { font-size: 1.4rem; line-height: 2rem; height: 4rem; }
+            .stats-container { font-size: 0.9rem; }
+            .stat-box span { font-size: 1rem; }
+            header { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader"><div class="spinner"></div></div>
+
+    <header>
+        <div class="logo-container">
+            <img src="https://i.ibb.co/7tD0Kn5K" alt="XOLƎRIƆ Logo">
+            <div class="stats-container">
+                <div class="stat-box">WPM: <span id="wpm">0</span></div>
+                <div class="stat-box">Aniqlik: <span id="accuracy">100%</span></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="installBtn">O'rnatish</button>
+            <button class="icon-btn" id="fullscreenBtn" title="To'liq ekran">⛶</button>
+            <button class="icon-btn" id="openSettings" title="Sozlamalar">⚙️</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="typing-area" id="typingArea">
+            <div class="words-wrapper" id="wordsWrapper"></div>
+        </div>
+        <button class="restart-btn" id="restartBtn">↻ Qayta boshlash</button>
+    </main>
+
+    <textarea id="hiddenInput" class="mobile-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeSettings">✕</button>
+            <h2>Mavzuni tanlang</h2>
+            <div class="topic-list" id="topicList"></div>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            }, 800);
+        });
+
+        // 10 ta kuchli ma'noli va tinish belgilarisiz matnlar bazasi
+        const rawTopics = [
+            { 
+                title: "1. Kichik odatlar (Atomic Habits)", 
+                base: "inson hayoti davomida qabul qiladigan kichik qarorlar uning kelajagini belgilab beradi har kuni oz ustida ishlash va faqat bir foizga yaxshiroq bolishga intilish uzoq muddatda ulkan natijalarga olib keladi muvaffaqiyat bu qisqa muddatli omad emas balki yillar davomida shakllantirilgan togri odatlar mevasidir yomon odatlardan xalos bolish uchun ularni keltirib chiqaruvchi omillarni yoqotish kerak yaxshi odatlarni esa iloji boricha oson va jozibador qilish muhimdir motivatsiya vaqtinchalik bolishi mumkin lekin qatiy intizom insonni doim oldinga yetaklaydi biz ozimiz istagan shaxsga aylanishimiz uchun avvalo ongimizdagi ishonchni ozgartirishimiz lozim har bir qilingan kichik harakat yangi shaxsiyatimiz uchun berilgan ovoz hisoblanadi" 
+            },
+            { 
+                title: "2. Chuqur diqqat (Deep Work)", 
+                base: "zamonaviy dunyoda chalgituvi omillar juda kop va ular diqqatimizni susaytiradi chuqur ish holatiga kirish va diqqatni faqat bitta vazifaga qaratish noyob qobiliyatga aylanib bormoqda ijtimoiy tarmoqlar qisqa videolar va keraksiz axborotlardan uzoqlashish ongimizni tiniqlashtiradi miya faoliyatini yaxshilash uchun yolgizlikda tafakkur qilish va diqqatni jamlash mashqlarini bajarish juda muhimdir yuzaki ishlar bizga faqat bandlik hissini beradi lekin haqiqiy qiymatni faqat chuqur va uzluksiz mehnat orqali yaratish mumkin aqliy mehnat bilan shugullanuvchilar uchun oz fikrlarini bir joyga jamlay olish eng asosiy quroldir atrof muhitdagi shovqinlardan uzilib toliq diqqat bilan ishlash natijasida yuqori sifatga erishamiz" 
+            },
+            { 
+                title: "3. Emotsional intellekt", 
+                base: "oz hissiyotlarini boshqara olish va atrofdagilarni tushunish muvaffaqiyatning asosiy kalitlaridan hisoblanadi gazzab qorquv va xafa bolish kabi salbiy holatlarda togri qaror qabul qila olish aqlning yetukligidan dalolat beradi stressli vaziyatlarda sovuqqonlikni saqlash barchaga nasib qilavermaydi emotsional intellekt hayotda sof mantiqiy aql zakovattan koproq ahamiyatga ega ekani isbotlangan inson oz qalbini kashf etgani sari dunyoni ham teranroq tushuna boshlaydi boshqalarning dardini his qilish va ularga hamdard bolish jamoada ishlash va liderlik qobiliyatini rivojlantiradi har qanday nizo va kelishmovchiliklarni tinch yol bilan hal etish emotsional yetuklik belgisidir ochiq kongillik baxtning asosidir" 
+            },
+            { 
+                title: "4. O'sish fikrlash tarzi (Mindset)", 
+                base: "insonning oz imkoniyatlariga bolgan ishonchi uning butun hayotini ozgartirish kuchiga ega qotib qolgan fikrlash tarziga ega odamlar qobiliyatlar tugma boladi deb hisoblaydilar va qiyinchiliklardan qochishga harakat qiladilar osish fikrlash tarziga ega insonlar esa har qanday qobiliyatni mehnat orqali rivojlantirish mumkinligiga ishonadilar xatolar va maglubiyatlar ular uchun shunchaki organish uchun yangi imkoniyatdir yangi narsalarni sinab korishdan qorqmaslik va doimiy izlanishda bolish ongni kengaytiradi tanqidlarni togri qabul qilish va ulardan xulosa chiqarish shaxsiy rivojlanishning eng muhim qadamidir oziga ishonch va uzluksiz mehnat orqali eng qiyin vazifalarni ham uddalash mumkin" 
+            },
+            { 
+                title: "5. Moliyaviy erkinlik", 
+                base: "boylik bu shunchaki kop pul topish emas balki topilgan mablagni togri boshqarish va uni kopaytirish sanatidir moliyaviy savodxonlik har bir inson egallashi kerak bolgan hayotiy konikma hisoblanadi aktivlar bu bizning chontagimizga pul keltiradigan narsalar passivlar esa aksincha pulimizni olib ketadigan narsalardir moliyaviy erkinlikka erishish uchun aktivlarni kopaytirish va keraksiz xarajatlardan qochish muhim pulni qadrlash uni tejash va oqilona sarmoya qilish kelajak uchun mustahkam poydevor yaratadi oz ustiga ortiqcha qarz majburiyatlarini olmaslik va faqat imkoniyat darajasida yashash xotirjamlik olib keladi daromad manbalarini koplash insonni toliq moliyaviy erkinlikka olib chiqadi" 
+            },
+            { 
+                title: "6. Muloqot sanati", 
+                base: "insonlar tabiatan ijtimoiy mavjudotlar bolib ularning muvaffaqiyati boshqalar bilan qanday munosabat ornatishiga bevosita bogliqdir chinakam aloqa ornatish uchun avvalo suhbatdoshni faol tinglash va uning nuqtai nazarini tushunishga harakat qilish lozim odamlarni tanqid qilish yoki ayblash kopincha teskari natija beradi samimiy maqtov va boshqalarning qadr qimmatini etirof etish insonlar qalbini zabt etishning eng kuchli qurolidir oz manfaatlaringizni bir chetga surib suhbatdoshning qiziqishlari haqida gapirish ozaro ishonchni shakllantiradi ozini boshqalar orniga qoya olish qobiliyati har qanday murakkab munosabatlarni yumshatishga yordam beradi" 
+            },
+            { 
+                title: "7. Hozirgi lahza kuchi", 
+                base: "insonlarning aksariyat qismi yohud otmish xotiralari bilan qayguga botib yoki kelajakdan xavotir olib yashaydilar lekin hayot faqatgina ayni shu hozirgi lahzada sodir bolmoqda hozirgi onni toliq his qilish va boriga shukur qilish qalb xotirjamligini taminlaydi xayollarga erk bermasdan diqqatni bajarilayotgan ishga toliq qaratish ongni tiniqlashtiradi atrofimizdagi tabiat gozalligi odamlar bilan suhbat yoki oddiygina nafas olish ham katta mojizadir kechagi kun otib ketdi ertangi kun esa hali kelgani yoq bizning yagona haqiqatimiz bu hozir va shu yerda bolishdir voqealarni ortiqcha tahlil qilmasdan ularni boricha qabul qilish ruhiy zoriqishlarning oldini oladi" 
+            },
+            { 
+                title: "8. Faqat eng muhimlari (Essentialism)", 
+                base: "bugungi kunda hamma narsaga ulgurishga harakat qilish eng katta xatolardan biridir muhim bolmagan ishlarga yoq deyishni organish orqali biz ozimiz uchun eng qadrli bolgan narsalarga vaqt topamiz faqatgina eng zarur va foydali ishlarga diqqatni qaratish hayotimizni soddalashtiradi va ortiqcha stressdan xalos qiladi kop narsaga ega bolish emas balki oz narsadan koproq quvonch topish chinakam baxtdir hayotimizdagi keraksiz buyumlar majburiyatlar va munosabatlardan voz kechish ongimizni tozalaydi sifat har doim miqdordan ustun turishi kerak diqqat markazida faqat bitta asosiy maqsadning bolishi uni amalga oshish ehtimolini oshiradi" 
+            },
+            { 
+                title: "9. Hayot mazmuni", 
+                base: "hayotning qiyin va sinovli damlarida omon qolish uchun insonga kuchli bir yashash maqsadi kerak boladi ozining nega yashayotganini aniq bilgan inson har qanday qiyinchilikka chiday oladi muammolar va azob uqubatlar inson tabiatining ajralmas qismidir lekin ularga qanday munosabatda bolishni faqat ozimiz tanlaymiz hayot mazmuni hammada turlicha bolishi mumkin kimgadir bu oila kimgadir sevimli kasb yana kimgadir jamiyatga foyda keltirish har bir kunimizga mano baxsh etish va qilinayotgan ishlardan qanoat hosil qilish bizni ruhan yengilmas qiladi sharoit qanchalik ogir bolmasin insonning oz fikr va munosabatini tanlash erkinligi doim ozi bilan qoladi" 
+            },
+            { 
+                title: "10. Tez va sekin fikrlash", 
+                base: "miyamiz malumotlarni qayta ishlashda ikki xil tizimdan foydalanadi birinchisi tezkor avtomatik va his tuygularga asoslangan bolsa ikkinchisi sekin mantiqiy va koproq kuch talab qiladigan tizimdir hayotiy qarorlarning aksariyatini tezkor ongimiz qabul qiladi va bu kopincha xatolarga olib keladi muhim qarorlar qabul qilishda sekinlashish tahlil qilish va faktlarga tayanish judayam muhim atrofimizdagi voqealarni faqatgina ozimizning tor dunyoqarashimiz orqali kormaslik axborotlarni shubha ostiga olish va tanqidiy fikrlash zamonaviy dunyoda eng muhim konikmadir kognitiv xatolarimizni anglash va ularni nazorat qilish obektiv haqiqatni korishga yordam beradi" 
+            }
+        ];
+
+        // Matn bazasini kengaytirish (~500+ so'z qilish uchun takrorlash va tozalash)
+        const topics = rawTopics.map(topic => {
+            let text = topic.base;
+            for(let i=0; i<6; i++) { text += " " + topic.base; }
+            text = text.replace(/[.,]/g, '').trim(); 
+            return { title: topic.title, text: text };
+        });
+
+        let currentText = "";
+        let currentIndex = 0;
+        let errors = 0;
+        let timer = null;
+        let startTime = null;
+        let isTyping = false;
+        
+        const wordsWrapper = document.getElementById("wordsWrapper");
+        const hiddenInput = document.getElementById("hiddenInput");
+        const wpmDisplay = document.getElementById("wpm");
+        const accuracyDisplay = document.getElementById("accuracy");
+        const settingsModal = document.getElementById("settingsModal");
+        const topicList = document.getElementById("topicList");
+        const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+        function loadTopics() {
+            topics.forEach((topic, index) => {
+                const btn = document.createElement("button");
+                btn.className = "topic-btn";
+                btn.textContent = topic.title;
+                btn.onclick = () => {
+                    document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    startGame(index);
+                    closeSettings();
+                };
+                topicList.appendChild(btn);
+            });
+            topicList.children[0].classList.add('active');
+        }
+
+        function startGame(topicIndex = 0) {
+            currentText = topics[topicIndex].text;
+            currentIndex = 0; errors = 0; isTyping = false;
+            clearInterval(timer); startTime = null;
+            wpmDisplay.textContent = "0"; accuracyDisplay.textContent = "100%";
+            hiddenInput.value = "";
+            wordsWrapper.style.transform = `translateY(0px)`;
+            renderText();
+            focusInput();
+        }
+
+        function renderText() {
+            wordsWrapper.innerHTML = "";
+            const chars = currentText.split("");
+            
+            chars.forEach((char, index) => {
+                const span = document.createElement("span");
+                span.textContent = char;
+                span.className = "letter";
+                
+                if (index < currentIndex) span.classList.add("correct");
+                if (index === currentIndex) span.classList.add("cursor");
+                
+                wordsWrapper.appendChild(span);
+            });
+
+            updateScrollPosition();
+        }
+
+        function updateScrollPosition() {
+            const cursorEl = document.querySelector(".cursor");
+            if (cursorEl) {
+                const topPos = cursorEl.offsetTop;
+                const lineHeight = parseFloat(getComputedStyle(wordsWrapper.parentElement).lineHeight);
+                const scrollAmount = topPos - lineHeight; 
+                if (scrollAmount > 0) {
+                    wordsWrapper.style.transform = `translateY(-${scrollAmount}px)`;
+                } else {
+                    wordsWrapper.style.transform = `translateY(0px)`;
+                }
+            }
+        }
+
+        function calculateStats() {
+            if (!startTime) return;
+            const timeElapsed = (new Date().getTime() - startTime) / 60000;
+            const wordsTyped = currentIndex / 5;
+            const wpm = Math.round(wordsTyped / timeElapsed);
+            const accuracy = currentIndex > 0 ? Math.round(((currentIndex - errors) / currentIndex) * 100) : 100;
+
+            wpmDisplay.textContent = wpm > 0 ? wpm : 0;
+            accuracyDisplay.textContent = accuracy + "%";
+        }
+
+        function handleInput(e) {
+            const val = hiddenInput.value;
+            const lastChar = val.slice(-1);
+            const expectedChar = currentText[currentIndex];
+
+            if (!isTyping && val.length > 0) {
+                isTyping = true;
+                startTime = new Date().getTime();
+                timer = setInterval(calculateStats, 1000);
+            }
+
+            if (val.length > currentIndex) {
+                if (lastChar === expectedChar) {
+                    currentIndex++;
+                } else {
+                    errors++;
+                    // Qizil xato animatsiyasi
+                    document.body.style.backgroundColor = "#2a1515";
+                    setTimeout(() => document.body.style.backgroundColor = "var(--bg-color)", 100);
+                }
+            } else if (val.length < currentIndex) {
+                currentIndex--;
+            }
+
+            if (currentIndex === currentText.length) {
+                clearInterval(timer);
+                calculateStats();
+                setTimeout(() => {
+                    alert(`Super! WPM: ${wpmDisplay.textContent} | Aniqlik: ${accuracyDisplay.textContent}`);
+                    startGame(Array.from(topicList.children).findIndex(b => b.classList.contains('active')));
+                }, 300);
+            }
+
+            hiddenInput.value = currentText.slice(0, currentIndex);
+            renderText();
+        }
+
+        function focusInput() { hiddenInput.focus(); }
+        function openSettings() { settingsModal.classList.add("active"); hiddenInput.blur(); }
+        function closeSettings() { settingsModal.classList.remove("active"); focusInput(); }
+
+        // To'liq ekran funksiyasi
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`To'liq ekranga o'tishda xatolik: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        hiddenInput.addEventListener("input", handleInput);
+        document.getElementById("openSettings").addEventListener("click", openSettings);
+        document.getElementById("closeSettings").addEventListener("click", closeSettings);
+        document.getElementById("restartBtn").addEventListener("click", () => startGame(Array.from(topicList.children).findIndex(b => b.classList.contains('active'))));
+        document.getElementById("typingArea").addEventListener("click", focusInput);
+        
+        document.body.addEventListener("click", (e) => {
+            if (!e.target.closest('header') && !settingsModal.classList.contains("active")) focusInput();
+        });
+
+        // PWA O'rnatish mantiqi
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') { installBtn.style.display = 'none'; }
+                deferredPrompt = null;
+            }
+        });
+
+        // Xizmat ishchisi (Service Worker) ro'yxatdan o'tkazish
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('SW ro\'yxatdan o\'tdi: ', reg.scope);
+                }).catch(err => {
+                    console.log('SW xatosi: ', err);
+                });
+            });
+        }
+
+        loadTopics();
+        startGame(0);
+    </script>
+</body>
+</html>
